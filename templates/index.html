@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Voice Emotion Analyzer</title>
+</head>
+<body>
+    <div class="container">
+        <h1>🎧 Voice Emotion Analyzer</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            👨🏻‍💻 By Sudais Khalid
+        </p>
+
+        <div class="upload-section">
+            <form id="audioForm" action="/analyze" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="audioFile">🎤 Upload Your Voice Recording</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="audioFile" name="audio" accept="audio/*" required style="display:none;">
+                        <div class="file-input-display" id="fileDisplay" tabindex="0">
+                            📁 Click to select audio file<br>
+                            <small style="color: #999; font-size: 0.9em;">Supported formats: WAV, MP3, FLAC, OGG, M4A</small>
+                        </div>
+                    </div>
+                    <button type="submit" class="analyze-btn" id="analyzeBtn">
+                        🔍 Analyze Emotion
+                    </button>
+                </div>
+            </form>
+
+            <div class="loading" id="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>🤖 Analyzing your emotion...</p>
+            </div>
+        </div>
+
+        <div class="result-section">
+            <h2>🎯 Detected Emotion</h2>
+            <div id="emotion">
+                <span>🎵 Upload an audio file to get started</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>💡 Tip: For best results, record clear speech for 3-10 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('audioFile');
+        const fileDisplay = document.getElementById('fileDisplay');
+        const emotionDisplay = document.getElementById('emotion');
+        const loading = document.getElementById('loading');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        // Emotion emoji mapping
+        const emotionEmojis = {
+            'Happy': '😊',
+            'Sad': '😢',
+            'Angry': '😠',
+            'Fearful': '😨',
+            'Surprised': '😲',
+            'Disgust': '🤢',
+            'Neutral': '😐',
+            'Calm': '😌'
+        };
+
+        // File selection handling
+        fileDisplay.addEventListener('click', () => fileInput.click());
+        fileDisplay.addEventListener('keydown', (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        fileInput.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                const file = this.files[0];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                fileDisplay.innerHTML = `
+                    <strong>✅ Selected: ${file.name}</strong><br>
+                    <small style="color: #666;">Size: ${fileSize} MB</small>
+                `;
+                fileDisplay.classList.add('has-file');
+            } else {
+                fileDisplay.innerHTML = `
+                    📁 Click to select audio file<br>
+                    <small style="color: #999; font-size: 0.9em;">Supported formats: WAV, MP3, FLAC, OGG, M4A</small>
+                `;
+                fileDisplay.classList.remove('has-file');
+            }
+        });
+
+        // Form submission with improved error handling
+        document.getElementById('audioForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                showError("Please select an audio file first.");
+                return;
+            }
+
+            // File size check (16MB limit)
+            if (file.size > 16 * 1024 * 1024) {
+                showError("File too large. Please upload a file smaller than 16MB.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            // Show loading state
+            showLoading();
+
+            try {
+                console.log('Sending request to /analyze');
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (data.emotion) {
+                    showSuccess(data.emotion);
+                } else if (data.error) {
+                    showError(data.error);
+                } else {
+                    showError("Unexpected response from server");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Connection error: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function showLoading() {
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '⏳ Analyzing...';
+            emotionDisplay.textContent = "🤖 Processing your audio...";
+            emotionDisplay.className = "";
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '🔍 Analyze Emotion';
+        }
+
+        function showSuccess(emotion) {
+            const emoji = emotionEmojis[emotion] || '🎭';
+            emotionDisplay.innerHTML = `
+                <span class="emotion-icon">${emoji}</span>
+                <span>Detected: <strong>${emotion.toUpperCase()}</strong></span>
+            `;
+            emotionDisplay.className = "success";
+        }
+
+        function showError(message) {
+            emotionDisplay.innerHTML = `
+                <span class="emotion-icon">❌</span>
+                <span>Error: ${message}</span>
+            `;
+            emotionDisplay.className = "error";
+        }
+
+        // Test server connection on load
+        window.addEventListener('load', async function () {
+            try {
+                const response = await fetch('/test');
+                const data = await response.json();
+                console.log('Server test:', data);
+                
+                if (!data.model_loaded) {
+                    showError("Model not loaded. Please check server logs.");
+                }
+            } catch (error) {
+                console.error('Server test failed:', error);
+                showError("Cannot connect to server. Please check if the Flask app is running.");
+            }
+        });
+    </script>
+</body>
+</html>
