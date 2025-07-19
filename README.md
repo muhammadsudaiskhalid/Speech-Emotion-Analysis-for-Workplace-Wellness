@@ -498,7 +498,7 @@ A: Yes, under the MIT license. See LICENSE file for details.
 ## 📞 Support
 
 - 📧 Email: [muhammadsudaiskhalid.artificialintelligence@stmu.edu.pk](muhammadsudaiskhalid.artificialintelligence@stmu.edu.pk)
-- 💬 Discord: [Join our community]([https://discord.gg/your-invite](https://discord.com/invite/cfjfrec9))
+- 💬 Discord: [Join our community](https://discord.com/invite/cfjfrec9)
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/speech-emotion-analysis/issues)
 - 📖 Wiki: [Project Wiki](https://github.com/yourusername/speech-emotion-analysis/wiki)
 - 💬 LinkedIn : [LinkedIn](https://www.linkedin.com/in/sudais-khalid/)
